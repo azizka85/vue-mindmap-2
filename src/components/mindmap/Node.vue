@@ -2,7 +2,7 @@
   <li>
     <article 
       ref="article"
-      :class="{collapsed: node.collapsed, active}"
+      :class="{collapsed: node.collapsed, editable: node.editable, active}"
       :tabindex="tabIndex"
       :contenteditable="node.editable"    
       @input="onNodeInput"
@@ -123,6 +123,8 @@ export default {
 
       if(!this.node.active) {
         this.setActiveNode(this.node);
+      } else {
+        this.setNodeCollapsed(this.node, !this.node.collapsed);
       }
 
       setTimeout(() => {

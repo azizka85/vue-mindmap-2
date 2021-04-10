@@ -41,7 +41,7 @@ export default {
   methods: {
     _addNode(children, newNode) {
       children.push(newNode);
-      this.canSave = true;
+      this.setCanSave(true);
     },
     _addParent(node, parent) {
       this.parents[node.id] = parent;
@@ -49,7 +49,7 @@ export default {
     _deleteNode(children, node) {
       const index = children.findIndex(elem => elem.id === node.id);
       children.splice(index, 1);
-      this.canSave = true;
+      setCanSave(true);
     },
     _deleteParent(node) {
       delete this.parents[node.id];
@@ -63,6 +63,9 @@ export default {
     getCanSave() {
       return this.canSave;
     },
+    setCanSave(canSave) {
+      this.canSave = canSave;
+    },
     disposeActiveNode() {
       this.setActiveNode(null);
     },
@@ -74,20 +77,20 @@ export default {
     },
     setNodeLabel(node, label) {
       node.label = label;
-      this.canSave = true;
+      this.setCanSave(true);
     },
     setNodeActive(node, active) {
       node.active = active;
-      this.canSave = true;
+      this.setCanSave(true);
     },
     setNodeEditable(node, editable) {
       node.editable = editable;
-      this.canSave = true;
+      this.setCanSave(true);
     },
     setNodeCollapsed(node, collapsed) {
       if(!collapsed || node.children.length > 0) {
         node.collapsed = collapsed;
-        this.canSave = true;
+        this.setCanSave(true);
       }
     },
     canMoveToLeftNode(node) {
@@ -154,7 +157,7 @@ export default {
         }
 
         this.activeNode = node;
-        this.canSave = true;
+        this.setCanSave(true);
       }
     },
     createChildNode(parent) {
@@ -265,6 +268,7 @@ export default {
       getRoot: this.getRoot,
       getActiveNode: this.getActiveNode,
       getCanSave: this.getCanSave,
+      setCanSave: this.setCanSave,
       disposeActiveNode: this.disposeActiveNode,
       parent: this.parent,
       setNodeLabel: this.setNodeLabel,

@@ -23,6 +23,7 @@ html, body {
     border: 1px solid black;
     border-radius: 10px;
     outline: none;
+    cursor: pointer;
 
     &.active {
       border: 3px dashed orange;
@@ -30,6 +31,10 @@ html, body {
 
     &.collapsed {
       box-shadow: 0px 1px 0px #888888, 0px 3px 0px #ffffff, 0px 4px 0px #888888, 0px 6px 0px #ffffff, 0px 7px 0px #888888;
+    }
+
+    &.editable {
+      cursor: auto;
     }
   }  
   li {

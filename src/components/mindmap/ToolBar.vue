@@ -62,6 +62,10 @@ export default {
       from: 'getCanSave',
       default: false
     },
+    setCanSave: {
+      from: 'setCanSave',
+      default: () => {}
+    },
     canActivateLeftNode: {
       from: 'canActivateLeftNode',
       default: () => {}
@@ -98,7 +102,7 @@ export default {
   methods: {
     onSaveBtnClick() {
       // TODO: Need to implement
-      console.log('saved');
+      this.setCanSave(false);
     }
   }
 }
