@@ -1,0 +1,303 @@
+<template>
+  <div class="container">
+    <tool-bar />
+    <ul class="mindmap" @click="disposeActiveNode">
+      <node 
+        v-for="(node, index) in root.children"      
+        :key="node.id"
+        :node="node"
+        :tabIndex="index"
+      />
+    </ul>  
+  </div>
+</template>
+
+<script>
+import Node from './Node.vue';
+import ToolBar from './ToolBar.vue';
+
+export default {
+  name: "MindMap",
+  data: () => ({    
+    root: {
+      id: null,
+      children: [{
+        id: Date.now(),
+        label: 'Press Space or double click to edit',
+        active: false,
+        editable: false,
+        collapsed: false,
+        children: []      
+      }] 
+    },
+    canSave: false,
+    activeNode: null,
+    parents: {}
+  }),
+  created() {
+    // TODO: Need to change
+    this._addParent(this.root.children[0], this.root);
+  },
+  methods: {
+    _addNode(children, newNode) {
+      children.push(newNode);
+      this.canSave = true;
+    },
+    _addParent(node, parent) {
+      this.parents[node.id] = parent;
+    },
+    _deleteNode(children, node) {
+      const index = children.findIndex(elem => elem.id === node.id);
+      children.splice(index, 1);
+      this.canSave = true;
+    },
+    _deleteParent(node) {
+      delete this.parents[node.id];
+    },
+    getRoot() {
+      return this.root;
+    },
+    getActiveNode() {
+      return this.activeNode;
+    },
+    getCanSave() {
+      return this.canSave;
+    },
+    disposeActiveNode() {
+      this.setActiveNode(null);
+    },
+    parent(node) {
+      if(node.id) {
+        return this.parents[node.id];
+      }
+      return null;
+    },
+    setNodeLabel(node, label) {
+      node.label = label;
+      this.canSave = true;
+    },
+    setNodeActive(node, active) {
+      node.active = active;
+      this.canSave = true;
+    },
+    setNodeEditable(node, editable) {
+      node.editable = editable;
+      this.canSave = true;
+    },
+    setNodeCollapsed(node, collapsed) {
+      if(!collapsed || node.children.length > 0) {
+        node.collapsed = collapsed;
+        this.canSave = true;
+      }
+    },
+    canMoveToLeftNode(node) {
+      return this.parent(node).id;
+    },
+    canMoveToRightNode(node) {
+      return !node.collapsed && node.children.length > 0;
+    },
+    canMoveToUpNode(node) {
+      return this.parent(node).children.indexOf(node) > 0;
+    },
+    canMoveToDownNode(node) {
+      const index = this.parent(node).children.indexOf(node);
+
+      return index >= 0 && index < this.parent(node).children.length - 1;
+    },    
+    canActivateLeftNode() {
+      return this.activeNode && this.canMoveToLeftNode(this.activeNode);
+    },
+    canActivateRightNode() {
+      return this.activeNode && this.canMoveToRightNode(this.activeNode);
+    },
+    canActivateUpNode() {
+      return this.activeNode && this.canMoveToUpNode(this.activeNode);
+    },
+    canActivateDownNode() {
+      return this.activeNode && this.canMoveToDownNode(this.activeNode);
+    },    
+    middleChildNode(node) {
+      if(node.children.length > 0) {
+        const index = Math.floor((node.children.length - 1) / 2);
+
+        return node.children[index];
+      }
+      return null;
+    },
+    upNode(node) {
+      const index = this.parent(node).children.indexOf(node);
+
+      if(index > 0) {
+        return this.parent(node).children[index-1];
+      }
+
+      return null;
+    },
+    downNode(node) {
+      const index = this.parent(node).children.indexOf(node);
+
+      if(index >= 0 && index < this.parent(node).children.length - 1) {
+        return this.parent(node).children[index + 1];
+      }
+
+      return null;
+    },
+    setActiveNode(node) {
+      if(!node || !this.activeNode || node.id !== this.activeNode.id) {
+        if(this.activeNode) {
+          this.setNodeActive(this.activeNode, false);
+          this.setNodeEditable(this.activeNode, false);
+        }
+
+        if(node) {
+          this.setNodeActive(node, true);
+        }
+
+        this.activeNode = node;
+        this.canSave = true;
+      }
+    },
+    createChildNode(parent) {
+      const newNode = {
+        id: Date.now(),
+        label: '',
+        active: false,
+        editable: true,
+        collapsed: false,
+        children: []          
+      };
+
+      this._addNode(parent.children, newNode);
+      this._addParent(newNode, parent);
+      this.setActiveNode(newNode);
+
+      if(parent.id) {
+        this.setNodeCollapsed(parent, false);
+      }
+    },
+    removeNode(node) {
+      const parent = this.parent(node);
+
+      if(!parent.id && parent.children.length < 2) return;
+      
+      const index = parent.children.indexOf(node);
+      
+      this._deleteNode(parent.children, node);
+      this._deleteParent(node);
+      
+      let focusIndex = parent.children.length - 1;
+      
+      if(parent.children.length > index) {
+        focusIndex = index;
+      }
+
+      if(focusIndex >= 0) {
+        const focusNode = parent.children[focusIndex];  
+        this.setActiveNode(focusNode);        
+      } else if(parent.id) {
+        this.setActiveNode(parent);
+      } 
+    },
+    setChildNodesCollapsed(node, collapsed) {
+      this.setNodeCollapsed(node, false);
+
+      node.children.forEach(child => {
+        if(!collapsed || child.children.length > 0) {
+          this.setNodeCollapsed(child, collapsed);       
+        }
+      });
+    },
+    moveToLeftNode(node) {
+      if(this.canMoveToLeftNode(node)) {
+        this.setActiveNode(this.parent(node));
+      }
+    },
+    moveToRightNode(node) {
+      if(this.canMoveToRightNode(node)) {
+        const childNode = this.middleChildNode(node);
+
+        if(childNode) {
+          this.setActiveNode(childNode);
+        }
+      }
+    },
+    moveToUpNode(node) {
+      if(this.canMoveToUpNode(node)) {
+        const upNode = this.upNode(node);
+
+        if(upNode) {
+          this.setActiveNode(upNode);
+        }
+      }
+    },
+    moveToDownNode(node) {
+      if(this.canMoveToDownNode(node)) {
+        const downNode = this.downNode(node);
+
+        if(downNode) {
+          this.setActiveNode(downNode);
+        }
+      }
+    },
+    activateLeftNode() {
+      if(this.activeNode && this.canActivateLeftNode()) {
+        this.moveToLeftNode(this.activeNode);
+      }
+    },
+    activateRightNode() {
+      if(this.activeNode && this.canActivateRightNode()) {
+        this.moveToRightNode(this.activeNode);
+      }
+    },
+    activateUpNode() {
+      if(this.activeNode && this.canActivateUpNode()) {
+        this.moveToUpNode(this.activeNode);
+      }
+    },
+    activateDownNode() {
+      if(this.activeNode && this.canActivateDownNode()) {
+        this.moveToDownNode(this.activeNode);
+      }
+    }
+  },    
+  provide: function() {
+    return {
+      getRoot: this.getRoot,
+      getActiveNode: this.getActiveNode,
+      getCanSave: this.getCanSave,
+      disposeActiveNode: this.disposeActiveNode,
+      parent: this.parent,
+      setNodeLabel: this.setNodeLabel,
+      setNodeActive: this.setNodeActive,
+      setNodeEditable: this.setNodeEditable,
+      setNodeCollapsed: this.setNodeCollapsed,
+      canMoveToLeftNode: this.canMoveToLeftNode,
+      canMoveToRightNode: this.canMoveToRightNode,
+      canMoveToUpNode: this.canMoveToUpNode,
+      canMoveToDownNode: this.canMoveToDownNode, 
+      canActivateLeftNode: this.canActivateLeftNode,
+      canActivateRightNode: this.canActivateRightNode,
+      canActivateUpNode: this.canActivateUpNode,
+      canActivateDownNode: this.canActivateDownNode,           
+      middleChildNode: this.middleChildNode,
+      upNode: this.upNode,
+      downNode: this.downNode,
+      setActiveNode: this.setActiveNode,
+      createChildNode: this.createChildNode,
+      removeNode: this.removeNode,
+      setChildNodesCollapsed: this.setChildNodesCollapsed,
+      moveToLeftNode: this.moveToLeftNode,
+      moveToRightNode: this.moveToRightNode,
+      moveToUpNode: this.moveToUpNode,
+      moveToDownNode: this.moveToDownNode,
+      activateLeftNode: this.activateLeftNode,
+      activateRightNode: this.activateRightNode,
+      activateUpNode: this.activateUpNode,
+      activateDownNode: this.activateDownNode            
+    };
+  },
+  components: {
+    ToolBar, Node
+  }
+}
+</script>
