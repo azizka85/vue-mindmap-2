@@ -319,7 +319,9 @@ export default {
 
       try {
         data = JSON.parse(localStorage.getItem('mindmap'));
-      } catch {}
+      } catch(error) {
+        console.error(error);
+      }
 
       if(data && typeof data === 'object') {
         this.setState(data);
