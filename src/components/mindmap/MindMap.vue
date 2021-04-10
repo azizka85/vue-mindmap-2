@@ -21,24 +21,50 @@ export default {
   data: () => ({    
     root: {
       id: null,
-      children: [{
-        id: Date.now(),
-        label: 'Press Space or double click to edit',
-        active: false,
-        editable: false,
-        collapsed: false,
-        children: []      
-      }] 
+      children: []
     },
     canSave: false,
     activeNode: null,
     parents: {}
   }),
   created() {
-    // TODO: Need to change
-    this._addParent(this.root.children[0], this.root);
+    this.loadFromLocalStorage();
   },
   methods: {
+    _getInitialNode() {
+      return {
+        id: Date.now(),
+        label: 'Press Space or double click to edit',
+        active: false,
+        editable: false,
+        collapsed: false,
+        children: []      
+      };
+    },
+    _clearState() {
+      this.setActiveNode(null);
+      this.root.children = [];
+      this.parents = {};
+      this.setCanSave(false);    
+    },
+    _setParents(children, parent) {
+      children.forEach(child => {
+        this._addParent(child, parent);
+
+        if(child.children.length > 0) {
+          this._setParents(child.children, child);
+        }
+      });
+    },
+    _unsetNodeActive(children) {
+      children.forEach(child => {
+        child.active = false;
+        
+        if(child.children.length > 0) {
+          this._unsetNodeActive(child.children);
+        }
+      });
+    },
     _addNode(children, newNode) {
       children.push(newNode);
       this.setCanSave(true);
@@ -261,6 +287,45 @@ export default {
       if(this.activeNode && this.canActivateDownNode()) {
         this.moveToDownNode(this.activeNode);
       }
+    },
+    saveToLocalStorage() {
+      localStorage.setItem('mindmap', JSON.stringify(this.root.children));
+    },
+    setInitialState() {
+      this.setActiveNode(null);
+
+      const initialNode = this._getInitialNode();
+
+      this.root.children = [
+        initialNode
+      ];      
+      this.parents = {
+        [initialNode.id]: this.root
+      };
+
+      this.setCanSave(false);    
+    },
+    setState(children) {
+      this.setActiveNode(null);
+      this._setParents(children, this.root);  
+      this._unsetNodeActive(children);
+      this.setCanSave(false);  
+      this.root.children = children;  
+    },    
+    loadFromLocalStorage() {
+      this._clearState();
+
+      let data = null;
+
+      try {
+        data = JSON.parse(localStorage.getItem('mindmap'));
+      } catch {}
+
+      if(data && typeof data === 'object') {
+        this.setState(data);
+      } else {
+        this.setInitialState();
+      }
     }
   },    
   provide: function() {
@@ -297,7 +362,11 @@ export default {
       activateLeftNode: this.activateLeftNode,
       activateRightNode: this.activateRightNode,
       activateUpNode: this.activateUpNode,
-      activateDownNode: this.activateDownNode            
+      activateDownNode: this.activateDownNode,
+      saveToLocalStorage: this.saveToLocalStorage,
+      setInitialState: this.setInitialState,
+      setState: this.setState,
+      loadFromLocalStorage: this.loadFromLocalStorage            
     };
   },
   components: {

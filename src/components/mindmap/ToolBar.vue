@@ -97,11 +97,15 @@ export default {
     activateDownNode: {
       from: 'activateDownNode',
       default: () => {}
+    },
+    saveToLocalStorage: {
+      from: 'saveToLocalStorage',
+      default: () => {}
     }
   },
   methods: {
     onSaveBtnClick() {
-      // TODO: Need to implement
+      this.saveToLocalStorage();
       this.setCanSave(false);
     }
   }
